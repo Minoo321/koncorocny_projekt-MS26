@@ -62,15 +62,26 @@ class Match(db.Model):
     @property
     def odds(self):
         """Ilustracne kurzy 1/X/2 - stabilne (odvodene z ID zapasu).
-        Pravdepodobnosti su korelované tak aby súčet dával ~110% (realistická marža)."""
+
+        Model kopiruje realne futbalove kurzy:
+        - 'sila favorita' urcuje vsetky tri kurzy naraz
+        - cim jasnejsi favorit, tym nizsia sanca remizy (realny jav)
+        - vyrovnany zapas: ~3.1 / 3.7 / 3.1, jasny favorit: ~1.35 / 8.0 / 16.0
+        - domaci je favorit o nieco castejsie (vyhoda domaceho prostredia)
+        """
         rng = random.Random((self.api_id or self.id or 0) * 7919)
-        p1 = rng.uniform(0.20, 0.65)
-        p2 = rng.uniform(0.15, max(0.16, 1.0 - p1 - 0.10))
-        px = max(0.10, 1.0 - p1 - p2)
-        margin = 1.10
+        strength = rng.uniform(0.0, 1.0) ** 1.5   # 0 = vyrovnane, 1 = jasny favorit (mierne zapasy castejsie)
+        p_draw = 0.30 - 0.17 * strength           # remiza 30% az 13%
+        fav_share = 0.5 + 0.425 * strength        # favorit berie 50-92.5% zvysku
+        remaining = 1.0 - p_draw
+        p_fav = remaining * fav_share
+        p_dog = remaining - p_fav
+        home_is_fav = rng.random() < 0.58         # mierna vyhoda domacich
+        p1, p2 = (p_fav, p_dog) if home_is_fav else (p_dog, p_fav)
+        margin = 1.07                             # typicka marza bukmakera ~107%
         return {
             "1": round(margin / p1, 2),
-            "X": round(margin / px, 2),
+            "X": round(margin / p_draw, 2),
             "2": round(margin / p2, 2),
         }
 
