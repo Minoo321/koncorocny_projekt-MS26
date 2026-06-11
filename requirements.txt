@@ -1,0 +1,7 @@
+flask
+flask-wtf
+flask-sqlalchemy
+flask-login
+email_validator
+requests
+tzdata

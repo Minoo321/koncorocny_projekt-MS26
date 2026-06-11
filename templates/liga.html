@@ -1,0 +1,67 @@
+{% extends "_base.html" %}
+{% block title %}{{ league.name }} · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('private_leagues') }}">← Moje ligy</a></p>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h2 class="mb-0">👥 {{ league.name }}</h2>
+        <small class="text-secondary">Zakladateľ: {{ league.owner.username }} · {{ league.members | length }} hráčov</small>
+    </div>
+    <div class="text-end">
+        <div class="text-secondary small">Vstupný kód — zdieľaj so spoluhráčmi</div>
+        <span class="badge bg-success fs-5 user-select-all">{{ league.code }}</span>
+    </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th><th>Hráč</th>
+            <th class="text-center">Body</th>
+            <th class="text-center">Tipy</th>
+            <th class="text-center">Správne</th>
+            <th class="text-center">Úspešnosť</th>
+            <th class="text-center">🔥 Séria</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr {% if row.user.id == current_user.id %}class="table-primary"{% endif %}>
+            <td>{% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}{{ row.rank }}.{% endif %}</td>
+            <td>
+                <a href="{{ url_for('player_profile', username=row.user.username) }}" class="player-link">
+                    <span class="avatar avatar-sm" style="background-color: {{ row.user.username | avatar_farba }}">{{ row.user.username[:2] | upper }}</span>
+                    {{ row.user.username }}
+                </a>
+                {% if row.user.id == league.owner_id %}👑{% endif %}
+            </td>
+            <td class="text-center"><strong>{{ row.user.points }}</strong></td>
+            <td class="text-center">{{ row.stats.tips }}</td>
+            <td class="text-center">{{ row.stats.correct }}</td>
+            <td class="text-center">{{ row.stats.success }} %</td>
+            <td class="text-center">{{ row.stats.longest_streak }}
+                {% if row.stats.current_streak >= 2 %}<span class="badge bg-danger">🔥 {{ row.stats.current_streak }}</span>{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<div class="d-flex gap-2 mt-3">
+    {% if league.owner_id == current_user.id %}
+    <form method="POST" action="{{ url_for('delete_league', league_id=league.id) }}"
+          onsubmit="return confirm('Naozaj zmazať celú ligu {{ league.name }}?');">
+        <button class="btn btn-outline-danger btn-sm">Zmazať ligu</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('leave_league', league_id=league.id) }}"
+          onsubmit="return confirm('Naozaj opustiť ligu?');">
+        <button class="btn btn-outline-danger btn-sm">Opustiť ligu</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

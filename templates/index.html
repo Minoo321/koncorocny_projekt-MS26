@@ -1,0 +1,90 @@
+{% extends "_base.html" %}
+{% block title %}MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 hero rounded-3 text-center">
+    <h1 class="display-5 fw-bold">🏆 Majstrovstvá sveta 2026</h1>
+    <p class="lead mb-1">USA · Kanada · Mexiko — najväčší futbalový turnaj histórie so 48 tímami.</p>
+    <p class="lead">Tipuj výsledky, zbieraj body podľa kurzov a poraz kamarátov v rebríčku!</p>
+    {% if not current_user.is_authenticated %}
+    <a class="btn btn-success btn-lg me-2" href="{{ url_for('register') }}">Registrovať sa</a>
+    <a class="btn btn-outline-success btn-lg" href="{{ url_for('login') }}">Prihlásiť sa</a>
+    {% else %}
+    <a class="btn btn-success btn-lg" href="{{ url_for('matches') }}">Tipovať MS 2026</a>
+    {% endif %}
+</div>
+
+{% if live_wc %}
+<h5 class="section-title live-title"><span class="live-dot"></span> Práve sa hrá</h5>
+{% for match in live_wc %}
+<div class="match-card live-card">
+    <div class="match-time"><span class="badge bg-danger">LIVE</span></div>
+    <div class="match-teams justify-content-center">
+        <span class="team">{% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="crest">{% endif %}<span>{{ match.home_team }}</span></span>
+        <span class="live-score">{{ match.score_home if match.score_home is not none else 0 }} : {{ match.score_away if match.score_away is not none else 0 }}</span>
+        <span class="team">{% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="crest">{% endif %}<span>{{ match.away_team }}</span></span>
+    </div>
+    <div class="match-meta">
+        {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>{% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <h5 class="section-title">Najbližšie zápasy MS</h5>
+        {% if next_wc %}
+        {% for match in next_wc %}
+        <a href="{{ url_for('matches') }}" class="text-decoration-none">
+            <div class="match-card finished-card">
+                <div class="match-time">
+                    <div class="fw-bold">{{ match.utc_date | lokalny("%d.%m.") }}</div>
+                    <div>{{ match.utc_date | lokalny }}</div>
+                </div>
+                <div class="match-teams">
+                    <span class="team">{% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="crest">{% endif %}<span>{{ match.home_team }}</span></span>
+                    <span class="vs">vs</span>
+                    <span class="team">{% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="crest">{% endif %}<span>{{ match.away_team }}</span></span>
+                </div>
+                <div class="match-meta">
+                    {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>{% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+        <a href="{{ url_for('matches') }}" class="btn btn-outline-success btn-sm">Celý program MS →</a>
+        {% else %}
+        <p class="text-secondary">Program turnaja sa načíta čoskoro.</p>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+        <h5 class="section-title">🏅 Top tiperi</h5>
+        {% if top_users %}
+        <ul class="list-group mb-3">
+            {% for user in top_users %}
+            <li class="list-group-item d-flex justify-content-between">
+                <span>{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %} {{ user.username }}</span>
+                <span class="badge bg-success">{{ user.points }} b</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('leaderboard') }}" class="btn btn-outline-success btn-sm mb-4">Celý rebríček →</a>
+        {% endif %}
+
+        <h5 class="section-title">Ako tipovať?</h5>
+        <ol class="small">
+            <li>Klikni na kurz <strong>1 / X / 2</strong> pri zápase — pridá sa na tvoj <strong>tiket</strong>.</li>
+            <li>Pridaj viac zápasov, doplň <strong>presné skóre</strong> pre bonus +5 b.</li>
+            <li>Klikni <strong>Podať tiket</strong> — hotovo.</li>
+            <li>Správny tip = <strong>kurz × 2 bodov</strong>. Sleduj rebríček a chatuj s ostatnými.</li>
+        </ol>
+        <div class="row text-center">
+            <div class="col-4"><div class="card p-2"><strong>{{ stats.users }}</strong><small>tiperov</small></div></div>
+            <div class="col-4"><div class="card p-2"><strong>{{ stats.tips }}</strong><small>tipov</small></div></div>
+            <div class="col-4"><div class="card p-2"><strong>{{ stats.matches }}</strong><small>zápasov MS</small></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

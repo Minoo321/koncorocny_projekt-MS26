@@ -1,0 +1,157 @@
+{% extends "_base.html" %}
+{% block title %}{{ match.home_team or 'Postupujúci' }} vs {{ match.away_team or 'Postupujúci' }} · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('matches', liga=match.league) }}">← Späť na zápasy</a></p>
+
+<div class="row g-4">
+<div class="col-lg-8 col-xl-9">
+
+    <div class="detail-header text-center p-4 mb-4 rounded-3">
+        <div class="mb-2">
+            {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>{% endif %}
+            {% if match.stage %}<span class="badge bg-secondary">{{ match.stage | faza }}</span>{% endif %}
+            {% if match.is_live %}<span class="badge bg-danger">LIVE</span>{% endif %}
+            {% if match.status == 'FINISHED' %}<span class="badge bg-dark border">Dohrané</span>{% endif %}
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <div class="detail-team">
+                {% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="detail-crest">{% endif %}
+                <div class="fw-bold fs-5">{{ match.home_team or 'Postupujúci' }}</div>
+            </div>
+            <div class="detail-score">
+                {% if match.score_home is not none %}
+                <span class="display-5 fw-bold {% if match.is_live %}text-danger{% endif %}">{{ match.score_home }} : {{ match.score_away }}</span>
+                {% else %}
+                <span class="display-6 fw-bold">{{ match.utc_date | lokalny }}</span>
+                <div class="text-secondary">{{ match.utc_date | lokalny('%d.%m.%Y') }}</div>
+                {% endif %}
+            </div>
+            <div class="detail-team">
+                {% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="detail-crest">{% endif %}
+                <div class="fw-bold fs-5">{{ match.away_team or 'Postupujúci' }}</div>
+            </div>
+        </div>
+        {% if match.venue %}<div class="text-secondary mt-2">🏟️ {{ match.venue }}</div>{% endif %}
+    </div>
+
+    {% if can_tip %}
+    <h5 class="section-title">Tipni si</h5>
+    <div class="match-card">
+        <div class="match-time">
+            <div class="fs-5 fw-bold">{{ match.utc_date | lokalny }}</div>
+        </div>
+        <div class="match-teams">
+            <span class="team"><span>{{ match.home_team }}</span></span>
+            <span class="vs">vs</span>
+            <span class="team"><span>{{ match.away_team }}</span></span>
+        </div>
+        <div class="odds-group">
+            {% for option in ['1', 'X', '2'] %}
+            <button type="button" class="odds-btn js-odds"
+                    data-match-id="{{ match.id }}" data-vyber="{{ option }}"
+                    data-odds="{{ '%.2f' | format(match.odds[option]) }}"
+                    data-home="{{ match.home_team }}" data-away="{{ match.away_team }}"
+                    data-time="{{ match.utc_date | lokalny('%d.%m. %H:%M') }}">
+                <span class="odds-label">{{ option }}</span>
+                <span class="odds-value">{{ '%.2f' | format(match.odds[option]) }}</span>
+            </button>
+            {% endfor %}
+        </div>
+        <div class="save-group">
+            {% if my_tip %}
+            <div class="my-tip-box">
+                <div class="my-tip-info">✓ {{ my_tip.vyber }} · {{ '%.2f' | format(match.odds[my_tip.vyber]) }}{% if my_tip.score_home is not none %} ({{ my_tip.score_home }}:{{ my_tip.score_away }}){% endif %}</div>
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" class="btn btn-outline-success btn-xs js-edit-tip"
+                            data-match-id="{{ match.id }}" data-vyber="{{ my_tip.vyber }}"
+                            data-odds="{{ '%.2f' | format(match.odds[my_tip.vyber]) }}"
+                            data-home="{{ match.home_team }}" data-away="{{ match.away_team }}"
+                            data-time="{{ match.utc_date | lokalny('%d.%m. %H:%M') }}"
+                            data-sd="{{ my_tip.score_home if my_tip.score_home is not none else '' }}"
+                            data-sh="{{ my_tip.score_away if my_tip.score_away is not none else '' }}">Upraviť</button>
+                    <form method="POST" action="{{ url_for('cancel_tip', match_id=match.id) }}"
+                          onsubmit="return confirm('Naozaj zrušiť tento tip?');">
+                        <button type="submit" class="btn btn-outline-danger btn-xs">Zrušiť</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <small class="text-secondary">klikni na kurz</small>
+            {% endif %}
+        </div>
+    </div>
+    {% elif my_tip %}
+    <div class="alert alert-secondary">
+        Tvoj tip: <strong>{{ my_tip.vyber }}</strong>
+        {% if my_tip.score_home is not none %}({{ my_tip.score_home }}:{{ my_tip.score_away }}){% endif %}
+        {% if my_tip.evaluated %}
+            {% if my_tip.points_awarded > 0 %}— <span class="text-success">vyhral si +{{ my_tip.points_awarded }} b 🎉</span>
+            {% else %}— <span class="text-danger">tentokrát nevyšiel ✗</span>{% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h5 class="section-title">Tipy hráčov {% if total_tips %}<span class="text-secondary">({{ total_tips }})</span>{% endif %}</h5>
+    {% if total_tips %}
+    <div class="dist-bar mb-1">
+        <div class="dist-1" style="width: {{ percent['1'] }}%"></div>
+        <div class="dist-x" style="width: {{ percent['X'] }}%"></div>
+        <div class="dist-2" style="width: {{ percent['2'] }}%"></div>
+    </div>
+    <div class="d-flex justify-content-between small text-secondary mb-4">
+        <span><span class="dist-dot dist-1"></span> 1 — {{ percent['1'] }} %</span>
+        <span><span class="dist-dot dist-x"></span> X — {{ percent['X'] }} %</span>
+        <span><span class="dist-dot dist-2"></span> 2 — {{ percent['2'] }} %</span>
+    </div>
+    {% else %}
+    <p class="text-secondary">Na tento zápas zatiaľ nikto netipoval — buď prvý!</p>
+    {% endif %}
+
+    {% if h2h %}
+    <h5 class="section-title">Vzájomné zápasy</h5>
+    {% for m in h2h %}
+    <div class="match-card finished-card">
+        <div class="match-time">{{ m.utc_date | lokalny('%d.%m.%Y') }}</div>
+        <div class="match-teams">
+            <span class="team"><span>{{ m.home_team }}</span></span>
+            <span class="final-score">{{ m.score_home }} : {{ m.score_away }}</span>
+            <span class="team"><span>{{ m.away_team }}</span></span>
+        </div>
+        <div class="match-meta"><span class="badge bg-dark border">{{ m.outcome }}</span></div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <h5 class="section-title">💬 Diskusia k zápasu</h5>
+    <div class="card">
+        <div class="card-body chat-box chat-box-small" id="chat-box" data-zapas="{{ match.id }}">
+            <p class="text-muted text-center my-5">Načítavam správy…</p>
+        </div>
+        <div class="card-footer">
+            <form id="chat-form" class="d-flex gap-2" autocomplete="off">
+                <input type="text" id="chat-input" class="form-control"
+                       placeholder="Napíš niečo k zápasu…" maxlength="500" required>
+                <button type="submit" class="btn btn-success">Odoslať</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-secondary"><a href="{{ url_for('login') }}">Prihlás sa</a> a diskutuj o zápase.</p>
+    {% endif %}
+
+</div>
+
+<div class="col-lg-4 col-xl-3">
+    {% include "_tiket.html" %}
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='tiket.js') }}"></script>
+{% if current_user.is_authenticated %}
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+{% endif %}
+{% endblock %}

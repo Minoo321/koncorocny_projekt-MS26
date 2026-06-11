@@ -1,0 +1,92 @@
+{% extends "_base.html" %}
+{% block title %}Rebríček · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">🏆 Rebríček</h2>
+
+{% if highlights %}
+<div class="row g-3 mb-4">
+    {% if highlights.streak %}
+    <div class="col-md-4">
+        <div class="highlight-card">
+            <div class="highlight-icon">🔥</div>
+            <div>
+                <div class="highlight-label">Najdlhšia séria turnaja</div>
+                <a href="{{ url_for('player_profile', username=highlights.streak.user.username) }}" class="highlight-value">{{ highlights.streak.user.username }}</a>
+                <div class="highlight-num">{{ highlights.streak.stats.longest_streak }} výhier v rade</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if highlights.best_day %}
+    <div class="col-md-4">
+        <div class="highlight-card">
+            <div class="highlight-icon">💰</div>
+            <div>
+                <div class="highlight-label">Najviac bodov za deň</div>
+                <a href="{{ url_for('player_profile', username=highlights.best_day.user.username) }}" class="highlight-value">{{ highlights.best_day.user.username }}</a>
+                <div class="highlight-num">{{ highlights.best_day.stats.best_day }} bodov</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if highlights.success %}
+    <div class="col-md-4">
+        <div class="highlight-card">
+            <div class="highlight-icon">🎯</div>
+            <div>
+                <div class="highlight-label">Najlepšia úspešnosť (min. 10 tipov)</div>
+                <a href="{{ url_for('player_profile', username=highlights.success.user.username) }}" class="highlight-value">{{ highlights.success.user.username }}</a>
+                <div class="highlight-num">{{ highlights.success.stats.success }} %</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if rows %}
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th><th>Hráč</th>
+            <th class="text-center">Body</th>
+            <th class="text-center">Tipy</th>
+            <th class="text-center">Správne</th>
+            <th class="text-center">Úspešnosť</th>
+            <th class="text-center" title="Najdlhšia séria výhier">🔥 Séria</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr {% if current_user.is_authenticated and row.user.id == current_user.id %}class="table-primary"{% endif %}>
+            <td>
+                {% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}{{ row.rank }}.{% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('player_profile', username=row.user.username) }}" class="player-link">
+                    <span class="avatar avatar-sm" style="background-color: {{ row.user.username | avatar_farba }}">{{ row.user.username[:2] | upper }}</span>
+                    {{ row.user.username }}
+                </a>
+                {% if row.crest %}<img src="{{ row.crest }}" alt="{{ row.user.favorite_team }}" title="Fandí: {{ row.user.favorite_team }}" class="crest crest-sm ms-1">{% endif %}
+            </td>
+            <td class="text-center"><strong>{{ row.user.points }}</strong></td>
+            <td class="text-center">{{ row.stats.tips }}</td>
+            <td class="text-center">{{ row.stats.correct }}</td>
+            <td class="text-center">{{ row.stats.success }} %</td>
+            <td class="text-center">
+                {{ row.stats.longest_streak }}
+                {% if row.stats.current_streak >= 2 %}
+                <span class="badge bg-danger" title="Aktuálna séria">🔥 {{ row.stats.current_streak }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Zatiaľ tu nie sú žiadni hráči.</p>
+{% endif %}
+{% endblock %}

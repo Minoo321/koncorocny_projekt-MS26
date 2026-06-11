@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% block title %}Chat · Match Tipy{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">💬 Chat</h2>
+
+<div class="card">
+    <div class="card-body chat-box" id="chat-box">
+        <p class="text-muted text-center my-5">Načítavam správy…</p>
+    </div>
+    <div class="card-footer">
+        <form id="chat-form" class="d-flex gap-2" autocomplete="off">
+            <input type="text" id="chat-input" class="form-control"
+                   placeholder="Napíš správu…" maxlength="500" required>
+            <button type="submit" class="btn btn-primary">Odoslať</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,19 @@
+<div class="tiket-panel sticky-lg-top" id="tiket-panel"
+     data-logged-in="{{ 1 if current_user.is_authenticated else 0 }}">
+    <h5 class="tiket-title">🎫 Môj tiket <span class="badge bg-success" id="tiket-count">0</span></h5>
+    <div id="tiket-items">
+        <p class="text-secondary small mb-0" id="tiket-empty">Klikni na kurz pri zápase a pridáš ho na tiket.</p>
+    </div>
+    <div class="tiket-footer mt-2" id="tiket-footer" hidden>
+        <div class="d-flex justify-content-between small mb-2">
+            <span>Celkový kurz</span><strong id="tiket-total">1.00</strong>
+        </div>
+        {% if current_user.is_authenticated %}
+        <button class="btn btn-success w-100" id="tiket-submit">Podať tiket</button>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-success w-100">Prihlás sa a podaj tiket</a>
+        {% endif %}
+        <button class="btn btn-outline-secondary btn-sm w-100 mt-2" id="tiket-clear">Vyprázdniť</button>
+    </div>
+    <div id="tiket-msg" class="small mt-2"></div>
+</div>

@@ -1,0 +1,191 @@
+{% extends "_base.html" %}
+{% block title %}{{ 'MS 2026' if league == 'WC' else leagues[league] }} · Zápasy{% endblock %}
+
+{% macro team(name, crest) %}
+<span class="team {% if not name %}team-tbd{% endif %}">
+    {% if crest %}<img src="{{ crest }}" alt="" class="crest">{% endif %}
+    <span>{{ name or 'Postupujúci' }}</span>
+</span>
+{% endmacro %}
+
+{% block content %}
+<div class="row g-4">
+<div class="col-lg-8 col-xl-9">
+
+    {% if league == 'WC' %}
+    <h2 class="mb-1">🏆 Majstrovstvá sveta 2026</h2>
+    <p class="text-secondary mb-3">USA · Kanada · Mexiko —
+        <a href="{{ url_for('groups') }}">skupiny</a> ·
+        <a href="{{ url_for('bracket') }}">pavúk</a></p>
+    {% else %}
+    <h2 class="mb-1">{{ leagues[league] }}</h2>
+    <p class="mb-3"><a href="{{ url_for('matches', liga='WC', den=den) }}">← Späť na MS 2026</a></p>
+    {% endif %}
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <a class="btn btn-sm {% if league == 'WC' %}btn-success{% else %}btn-outline-secondary{% endif %}"
+           href="{{ url_for('matches', liga='WC', den=den) }}">🏆 MS 2026</a>
+        <div class="dropdown">
+            <button class="btn btn-sm {% if league != 'WC' %}btn-success{% else %}btn-outline-secondary{% endif %} dropdown-toggle"
+                    data-bs-toggle="dropdown">Ostatné súťaže</button>
+            <ul class="dropdown-menu">
+                {% for code, name in leagues.items() if code != 'WC' %}
+                <li><a class="dropdown-item {% if league == code %}active{% endif %}"
+                       href="{{ url_for('matches', liga=code, den=den) }}">{{ name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <span class="vr d-none d-md-block"></span>
+        {% for key, label in [('dnes', 'Dnes'), ('zajtra', 'Zajtra'), ('tyzden', '7 dní'), ('vsetko', 'Všetky')] %}
+        <a class="btn btn-sm {% if den == key %}btn-success{% else %}btn-outline-secondary{% endif %}"
+           href="{{ url_for('matches', liga=league, den=key) }}">{{ label }}</a>
+        {% endfor %}
+        <form method="GET" action="{{ url_for('matches') }}" class="d-flex gap-2 ms-auto">
+            <input type="hidden" name="liga" value="{{ league }}">
+            <input type="date" name="datum" class="form-control form-control-sm date-pick" value="{{ datum }}">
+            <button class="btn btn-sm btn-outline-success">Deň</button>
+        </form>
+    </div>
+
+    <div id="live-region" data-liga="{{ league }}">
+        {% if live %}
+        <h5 class="section-title live-title"><span class="live-dot"></span> Práve sa hrá</h5>
+        {% for match in live %}
+        <a href="{{ url_for('match_detail', match_id=match.id) }}" class="text-decoration-none">
+        <div class="match-card live-card">
+            <div class="match-time"><span class="badge bg-danger">LIVE</span></div>
+            <div class="match-teams">
+                {{ team(match.home_team, match.crest_home) }}
+                <span class="live-score">{{ match.score_home if match.score_home is not none else 0 }} : {{ match.score_away if match.score_away is not none else 0 }}</span>
+                {{ team(match.away_team, match.crest_away) }}
+            </div>
+            <div class="match-meta">
+                {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>
+                {% elif match.stage and match.stage != 'GROUP_STAGE' %}<span class="badge bg-secondary">{{ match.stage | faza }}</span>{% endif %}
+            </div>
+        </div>
+        </a>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    {% if days %}
+        {% for day, matches_in_day in days %}
+        <h5 class="section-title">{{ day | den_nazov }}</h5>
+        {% for match in matches_in_day %}
+        {% set my_tip = my_tips.get(match.id) %}
+        <div class="match-card {% if my_tip %}tipped{% endif %}">
+            <div class="match-time">
+                <div class="fs-5 fw-bold">{{ match.utc_date | lokalny }}</div>
+                {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>
+                {% elif match.stage and match.stage != 'GROUP_STAGE' %}<span class="badge bg-secondary">{{ match.stage | faza }}</span>
+                {% elif match.matchday %}<span class="badge bg-secondary">{{ match.matchday }}. kolo</span>{% endif %}
+            </div>
+
+            <a class="match-teams match-link" href="{{ url_for('match_detail', match_id=match.id) }}">
+                {{ team(match.home_team, match.crest_home) }}
+                <span class="vs">vs</span>
+                {{ team(match.away_team, match.crest_away) }}
+            </a>
+
+            {% if match.has_teams %}
+            <div class="odds-group">
+                {% for option in ['1', 'X', '2'] %}
+                <button type="button" class="odds-btn js-odds"
+                        data-match-id="{{ match.id }}" data-vyber="{{ option }}"
+                        data-odds="{{ '%.2f' | format(match.odds[option]) }}"
+                        data-home="{{ match.home_team }}" data-away="{{ match.away_team }}"
+                        data-time="{{ match.utc_date | lokalny('%d.%m. %H:%M') }}">
+                    <span class="odds-label">{{ option }}</span>
+                    <span class="odds-value">{{ '%.2f' | format(match.odds[option]) }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            <div class="save-group">
+                {% if my_tip %}
+                <div class="my-tip-box">
+                    <div class="my-tip-info">✓ {{ my_tip.vyber }} · {{ '%.2f' | format(match.odds[my_tip.vyber]) }}{% if my_tip.score_home is not none %} ({{ my_tip.score_home }}:{{ my_tip.score_away }}){% endif %}</div>
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button type="button" class="btn btn-outline-success btn-xs js-edit-tip"
+                                data-match-id="{{ match.id }}" data-vyber="{{ my_tip.vyber }}"
+                                data-odds="{{ '%.2f' | format(match.odds[my_tip.vyber]) }}"
+                                data-home="{{ match.home_team }}" data-away="{{ match.away_team }}"
+                                data-time="{{ match.utc_date | lokalny('%d.%m. %H:%M') }}"
+                                data-sd="{{ my_tip.score_home if my_tip.score_home is not none else '' }}"
+                                data-sh="{{ my_tip.score_away if my_tip.score_away is not none else '' }}">Upraviť</button>
+                        <form method="POST" action="{{ url_for('cancel_tip', match_id=match.id) }}"
+                              onsubmit="return confirm('Naozaj zrušiť tento tip?');">
+                            <button type="submit" class="btn btn-outline-danger btn-xs">Zrušiť</button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <small class="text-secondary">klikni na kurz</small>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="odds-group"></div>
+            <div class="save-group">
+                <small class="text-secondary">tímy ešte nie sú známe</small>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    {% else %}
+    <div class="alert alert-secondary">
+        {% if den == 'dnes' %}
+        Dnes sa nehrá žiadny zápas. Skús <a href="{{ url_for('matches', liga=league, den='zajtra') }}">zajtra</a>,
+        <a href="{{ url_for('matches', liga=league, den='tyzden') }}">najbližších 7 dní</a> alebo vyber dátum hore.
+        {% else %}
+        V tomto období nie sú žiadne zápasy. Skús iný filter alebo inú súťaž.
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h5 class="section-title mt-4">Posledné výsledky</h5>
+    {% if finished %}
+    {% for match in finished %}
+    {% set my_tip = my_tips.get(match.id) %}
+    <a href="{{ url_for('match_detail', match_id=match.id) }}" class="text-decoration-none">
+    <div class="match-card finished-card">
+        <div class="match-time">
+            <div>{{ match.utc_date | lokalny("%d.%m.") }}</div>
+            {% if match.group_name %}<span class="badge bg-secondary">{{ match.group_name | skupina }}</span>
+            {% elif match.stage and match.stage != 'GROUP_STAGE' %}<span class="badge bg-secondary">{{ match.stage | faza }}</span>
+            {% elif match.matchday %}<span class="badge bg-secondary">{{ match.matchday }}. kolo</span>{% endif %}
+        </div>
+        <div class="match-teams">
+            {{ team(match.home_team, match.crest_home) }}
+            <span class="final-score">{{ match.score_home }} : {{ match.score_away }}</span>
+            {{ team(match.away_team, match.crest_away) }}
+        </div>
+        <div class="match-meta">
+            <span class="badge bg-dark border">{{ match.outcome }}</span>
+            {% if my_tip %}
+                {% if my_tip.points_awarded > 0 %}
+                <span class="badge bg-success">{{ my_tip.vyber }} ✓ +{{ my_tip.points_awarded }} b</span>
+                {% else %}
+                <span class="badge bg-danger">{{ my_tip.vyber }} ✗</span>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    </a>
+    {% endfor %}
+    {% else %}
+    <p class="text-secondary">Žiadne dohrané zápasy.</p>
+    {% endif %}
+
+</div>
+
+<div class="col-lg-4 col-xl-3">
+    {% include "_tiket.html" %}
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='tiket.js') }}"></script>
+<script src="{{ url_for('static', filename='live.js') }}"></script>
+{% endblock %}

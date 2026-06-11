@@ -1,0 +1,61 @@
+{% extends "_base.html" %}
+{% block title %}Moje tipy · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">📋 Moje tipy</h2>
+
+<div class="row text-center mb-4 g-2">
+    <div class="col"><div class="card p-2"><strong>{{ current_user.points }}</strong><small class="text-secondary">bodov</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ summary.total }}</strong><small class="text-secondary">tipov</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ summary.pending }}</strong><small class="text-secondary">čaká</small></div></div>
+    <div class="col"><div class="card p-2"><strong class="text-success">{{ summary.correct }}</strong><small class="text-secondary">správnych</small></div></div>
+    <div class="col"><div class="card p-2"><strong class="text-danger">{{ summary.wrong }}</strong><small class="text-secondary">zlých</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ summary.success }} %</strong><small class="text-secondary">úspešnosť</small></div></div>
+</div>
+
+{% if tips %}
+{% for tip in tips %}
+{% set match = tip.match %}
+<div class="match-card finished-card">
+    <div class="match-time">
+        <div>{{ match.utc_date | lokalny('%d.%m.%Y') }}</div>
+        <div>{{ match.utc_date | lokalny }}</div>
+    </div>
+    <a class="match-teams match-link" href="{{ url_for('match_detail', match_id=match.id) }}">
+        <span class="team">{% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="crest">{% endif %}<span>{{ match.home_team }}</span></span>
+        {% if match.score_home is not none %}
+        <span class="final-score">{{ match.score_home }} : {{ match.score_away }}</span>
+        {% else %}
+        <span class="vs">vs</span>
+        {% endif %}
+        <span class="team">{% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="crest">{% endif %}<span>{{ match.away_team }}</span></span>
+    </a>
+    <div class="match-meta">
+        <span class="badge bg-dark border" title="Tvoj tip">{{ tip.vyber }} · {{ '%.2f' | format(match.odds[tip.vyber]) }}</span>
+        {% if tip.score_home is not none %}
+        <span class="badge bg-dark border" title="Tip na presné skóre">{{ tip.score_home }}:{{ tip.score_away }}</span>
+        {% endif %}
+        {% if tip.evaluated %}
+            {% if tip.points_awarded > 0 %}
+            <span class="badge bg-success">+{{ tip.points_awarded }} b ✓</span>
+            {% else %}
+            <span class="badge bg-danger">0 b ✗</span>
+            {% endif %}
+        {% else %}
+        <span class="badge bg-secondary">čaká</span>
+            {% if match.status in ('SCHEDULED', 'TIMED') %}
+            <form method="POST" action="{{ url_for('cancel_tip', match_id=match.id) }}"
+                  onsubmit="return confirm('Naozaj zrušiť tento tip?');" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger btn-xs">Zrušiť</button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-secondary">
+    Zatiaľ nemáš žiadne tipy — <a href="{{ url_for('matches') }}">poď tipovať MS 2026</a>!
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "_base.html" %}
+{% block title %}Môj profil · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">⚙️ Môj profil</h2>
+<p class="mb-4"><a href="{{ url_for('player_profile', username=current_user.username) }}">Zobraziť môj verejný profil →</a></p>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Obľúbený tím</h5>
+                <p class="text-secondary small">Zobrazí sa pri tvojom mene v rebríčku a chate.</p>
+                {% if current_user.favorite_team %}
+                <p>Aktuálne:
+                    {% if favorite_crest %}<img src="{{ favorite_crest }}" alt="" class="crest crest-sm">{% endif %}
+                    <strong>{{ current_user.favorite_team }}</strong></p>
+                {% endif %}
+                <form method="POST" class="d-flex gap-2">
+                    <input type="hidden" name="akcia" value="tim">
+                    <select name="favorite_team" class="form-select">
+                        <option value="">— bez obľúbeného tímu —</option>
+                        {% for team in teams %}
+                        <option value="{{ team }}" {% if current_user.favorite_team == team %}selected{% endif %}>{{ team }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-success">Uložiť</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">🏆 Tip na majstra sveta</h5>
+                <p class="text-secondary small">Ak tvoj tím vyhrá celé MS, získaš <strong>+25 bodov</strong>.
+                    Tip sa dá meniť len do začiatku turnaja.</p>
+                {% if current_user.champion_pick %}
+                <p>Tvoj tip:
+                    {% if champion_crest %}<img src="{{ champion_crest }}" alt="" class="crest crest-sm">{% endif %}
+                    <strong>{{ current_user.champion_pick }}</strong></p>
+                {% endif %}
+                {% if started %}
+                <div class="alert alert-secondary py-2 small mb-0">MS už začali — tip je uzamknutý 🔒</div>
+                {% else %}
+                <form method="POST" class="d-flex gap-2">
+                    <input type="hidden" name="akcia" value="majster">
+                    <select name="champion_pick" class="form-select">
+                        <option value="">— bez tipu —</option>
+                        {% for team in teams %}
+                        <option value="{{ team }}" {% if current_user.champion_pick == team %}selected{% endif %}>{{ team }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-success">Uložiť</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Zmena hesla</h5>
+                <form method="POST">
+                    <input type="hidden" name="akcia" value="heslo">
+                    <div class="mb-2">
+                        <label class="form-label">Staré heslo</label>
+                        <input type="password" name="stare_heslo" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Nové heslo (min. 6 znakov)</label>
+                        <input type="password" name="nove_heslo" class="form-control" required minlength="6">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nové heslo znova</label>
+                        <input type="password" name="nove_heslo2" class="form-control" required minlength="6">
+                    </div>
+                    <button class="btn btn-success">Zmeniť heslo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

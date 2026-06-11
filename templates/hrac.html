@@ -1,0 +1,95 @@
+{% extends "_base.html" %}
+{% block title %}{{ player.username }} · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<div class="profile-header p-4 mb-4 rounded-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <span class="avatar avatar-lg" style="background-color: {{ player.username | avatar_farba }}">{{ player.username[:2] | upper }}</span>
+        <div>
+            <h2 class="mb-0">{{ player.username }}
+                {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% endif %}
+            </h2>
+            <div class="text-secondary">{{ rank }}. miesto v rebríčku</div>
+            {% if player.favorite_team %}
+            <div class="mt-1">
+                {% if favorite_crest %}<img src="{{ favorite_crest }}" alt="" class="crest crest-sm">{% endif %}
+                <span class="small">Fandí: <strong>{{ player.favorite_team }}</strong></span>
+            </div>
+            {% endif %}
+            {% if player.champion_pick %}
+            <div class="mt-1">
+                {% if champion_crest %}<img src="{{ champion_crest }}" alt="" class="crest crest-sm">{% endif %}
+                <span class="small">🏆 Tip na majstra: <strong>{{ player.champion_pick }}</strong>
+                {% if player.champion_awarded %}<span class="badge bg-success">+25 b ✓</span>{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="ms-auto text-center">
+            <div class="display-6 fw-bold text-success">{{ player.points }}</div>
+            <div class="text-secondary small">bodov</div>
+        </div>
+    </div>
+</div>
+
+<div class="row text-center mb-4 g-2">
+    <div class="col"><div class="card p-2"><strong>{{ stats.tips }}</strong><small class="text-secondary">tipov</small></div></div>
+    <div class="col"><div class="card p-2"><strong class="text-success">{{ stats.correct }}</strong><small class="text-secondary">správnych</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ stats.success }} %</strong><small class="text-secondary">úspešnosť</small></div></div>
+    <div class="col"><div class="card p-2"><strong>🔥 {{ stats.longest_streak }}</strong><small class="text-secondary">najdlhšia séria</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ stats.current_streak }}</strong><small class="text-secondary">aktuálna séria</small></div></div>
+    <div class="col"><div class="card p-2"><strong>{{ stats.best_day }}</strong><small class="text-secondary">max bodov/deň</small></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <h5 class="section-title">🏅 Ocenenia</h5>
+        <div class="d-flex flex-column gap-2">
+            {% for emoji, name, desc, earned in achievements %}
+            <div class="achievement {% if not earned %}locked{% endif %}">
+                <span class="achievement-icon">{{ emoji }}</span>
+                <div>
+                    <div class="fw-bold">{{ name }}</div>
+                    <small class="text-secondary">{{ desc }}</small>
+                </div>
+                <span class="ms-auto">{% if earned %}<span class="badge bg-success">✓</span>{% else %}<span class="badge bg-secondary">🔒</span>{% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% if most_tipped %}
+        <h5 class="section-title mt-4">Najčastejšie tipuje na</h5>
+        <div class="d-flex align-items-center gap-2">
+            {% if most_tipped_crest %}<img src="{{ most_tipped_crest }}" alt="" class="crest">{% endif %}
+            <strong>{{ most_tipped }}</strong>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-7">
+        <h5 class="section-title">Posledné tipy</h5>
+        {% if recent %}
+        {% for tip in recent %}
+        {% set match = tip.match %}
+        <div class="match-card finished-card">
+            <div class="match-time">{{ match.utc_date | lokalny('%d.%m.') }}</div>
+            <a class="match-teams match-link" href="{{ url_for('match_detail', match_id=match.id) }}">
+                <span class="team">{% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="crest">{% endif %}<span>{{ match.home_team }}</span></span>
+                {% if match.score_home is not none %}
+                <span class="final-score">{{ match.score_home }} : {{ match.score_away }}</span>
+                {% else %}<span class="vs">vs</span>{% endif %}
+                <span class="team">{% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="crest">{% endif %}<span>{{ match.away_team }}</span></span>
+            </a>
+            <div class="match-meta">
+                <span class="badge bg-dark border">{{ tip.vyber }}</span>
+                {% if tip.evaluated %}
+                    {% if tip.points_awarded > 0 %}<span class="badge bg-success">+{{ tip.points_awarded }} b</span>
+                    {% else %}<span class="badge bg-danger">✗</span>{% endif %}
+                {% else %}<span class="badge bg-secondary">čaká</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-secondary">Hráč zatiaľ netipoval.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

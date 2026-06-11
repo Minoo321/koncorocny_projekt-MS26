@@ -1,0 +1,56 @@
+{% extends "_base.html" %}
+{% block title %}Pavúk · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-1">
+    <h2 class="mb-0">🏆 Vyraďovacia fáza</h2>
+    <a href="{{ url_for('groups') }}" class="btn btn-outline-success btn-sm">Tabuľky skupín →</a>
+</div>
+<p class="text-secondary mb-4">Tímy sa doplnia automaticky po skončení skupín. Klikni na zápas pre detail a tipovanie.</p>
+
+{% if stages %}
+<div class="bracket-scroll">
+    <div class="bracket">
+        {% for stage, matches in stages %}
+        <div class="bracket-stage {% if stage == 'FINAL' %}bracket-final{% endif %}">
+            <div class="bracket-stage-head">
+                <span class="bracket-stage-title">{{ stage | faza }}</span>
+                <span class="bracket-stage-count">{{ matches | length }} {{ 'zápas' if matches | length == 1 else ('zápasy' if matches | length < 5 else 'zápasov') }}</span>
+            </div>
+            <div class="bracket-stage-body">
+                {% for match in matches %}
+                {% set w = match.ko_outcome %}
+                <a href="{{ url_for('match_detail', match_id=match.id) }}" class="text-decoration-none bracket-link">
+                <div class="bracket-match {% if match.status == 'FINISHED' %}finished{% endif %} {% if match.is_live %}live{% endif %}">
+                    <div class="bracket-row {% if w == '1' %}winner{% elif w == '2' %}loser{% endif %}">
+                        <span class="bracket-team {% if not match.home_team %}team-tbd{% endif %}">
+                            {% if match.crest_home %}<img src="{{ match.crest_home }}" alt="" class="crest crest-sm">{% else %}<span class="crest-placeholder">?</span>{% endif %}
+                            {{ match.home_team or 'Postupujúci' }}
+                        </span>
+                        <span class="bracket-score">{{ match.score_home if match.score_home is not none else '' }}</span>
+                    </div>
+                    <div class="bracket-row {% if w == '2' %}winner{% elif w == '1' %}loser{% endif %}">
+                        <span class="bracket-team {% if not match.away_team %}team-tbd{% endif %}">
+                            {% if match.crest_away %}<img src="{{ match.crest_away }}" alt="" class="crest crest-sm">{% else %}<span class="crest-placeholder">?</span>{% endif %}
+                            {{ match.away_team or 'Postupujúci' }}
+                        </span>
+                        <span class="bracket-score">{{ match.score_away if match.score_away is not none else '' }}</span>
+                    </div>
+                    <div class="bracket-date">
+                        <span>{{ match.utc_date | lokalny('%d.%m. %H:%M') }}</span>
+                        {% if match.is_live %}<span class="badge bg-danger">LIVE</span>{% endif %}
+                        {% if match.venue %}<span class="bracket-venue" title="{{ match.venue }}">🏟️ {{ match.venue | truncate(22) }}</span>{% endif %}
+                    </div>
+                </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<p class="text-secondary small">Posúvaj doprava ⟶ pre ďalšie kolá. Víťaz je zvýraznený zelenou.</p>
+{% else %}
+<div class="alert alert-secondary">Vyraďovacie zápasy zatiaľ nie sú v databáze — počkaj na ďalšiu synchronizáciu s API.</div>
+{% endif %}
+{% endblock %}

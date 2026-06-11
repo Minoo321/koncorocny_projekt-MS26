@@ -1,0 +1,53 @@
+{% extends "_base.html" %}
+{% block title %}Skupiny · MS 2026 Tipovačka{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">🏆 MS 2026 — Skupiny</h2>
+
+{% if skupiny %}
+<div class="row g-3">
+    {% for group_name, rows in skupiny %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-header fw-bold">{{ group_name | skupina if group_name else 'Tabuľka' }}</div>
+            <table class="table table-sm mb-0 align-middle group-table">
+                <thead>
+                    <tr class="text-secondary small">
+                        <th>#</th><th>Tím</th>
+                        <th class="text-center">Z</th>
+                        <th class="text-center">V</th>
+                        <th class="text-center">R</th>
+                        <th class="text-center">P</th>
+                        <th class="text-center">+/-</th>
+                        <th class="text-center">B</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr {% if row.position <= 2 %}class="advance"{% endif %}>
+                        <td>{{ row.position }}</td>
+                        <td>
+                            {% if row.crest %}<img src="{{ row.crest }}" alt="" class="crest crest-sm">{% endif %}
+                            {{ row.team_name }}
+                        </td>
+                        <td class="text-center">{{ row.played }}</td>
+                        <td class="text-center">{{ row.won }}</td>
+                        <td class="text-center">{{ row.draw }}</td>
+                        <td class="text-center">{{ row.lost }}</td>
+                        <td class="text-center">{{ row.goal_diff }}</td>
+                        <td class="text-center fw-bold">{{ row.points }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<p class="text-secondary small mt-3">Zvýraznené tímy postupujú zo skupiny. Z = zápasy, V = výhry, R = remízy, P = prehry, B = body.</p>
+{% else %}
+<div class="alert alert-secondary">
+    Tabuľky skupín sa načítajú z API — skontroluj, či je nastavený API kľúč, a obnov stránku o chvíľu.
+</div>
+{% endif %}
+{% endblock %}
