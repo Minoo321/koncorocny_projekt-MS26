@@ -61,12 +61,17 @@ class Match(db.Model):
 
     @property
     def odds(self):
-        """Ilustracne kurzy 1/X/2 - stabilne (odvodene z ID zapasu)."""
+        """Ilustracne kurzy 1/X/2 - stabilne (odvodene z ID zapasu).
+        Pravdepodobnosti su korelované tak aby súčet dával ~110% (realistická marža)."""
         rng = random.Random((self.api_id or self.id or 0) * 7919)
+        p1 = rng.uniform(0.20, 0.65)
+        p2 = rng.uniform(0.15, max(0.16, 1.0 - p1 - 0.10))
+        px = max(0.10, 1.0 - p1 - p2)
+        margin = 1.10
         return {
-            "1": round(rng.uniform(1.3, 3.4), 2),
-            "X": round(rng.uniform(2.8, 4.2), 2),
-            "2": round(rng.uniform(1.4, 4.6), 2),
+            "1": round(margin / p1, 2),
+            "X": round(margin / px, 2),
+            "2": round(margin / p2, 2),
         }
 
     @property
